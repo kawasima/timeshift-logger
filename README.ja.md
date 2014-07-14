@@ -18,13 +18,11 @@ log4jの設定にタイムシフトロガー用のAppenderを追加します。�
 log4j.xmlに以下のAppenderを追加してください。
 
 ```xml
-<appender name="timeshift" class="org.apache.log4j.net.SyslogAppender">
-    <param name="SyslogHost" value="logserver:8888"/>
-    <param name="Facility" value="USER"/>
+<appender name="timeshift" class="org.apache.log4j.net.SocketAppender">
+    <param name="RemoteHost" value="logserver"/>
+    <param name="Port" value="8888"/>
+    <param name="ReconnectionDelay" value="1000"/>
     <param name="Threshold" value="DEBUG"/>
-    <layout class="org.apache.log4j.PatternLayout">
-        <param name="ConversionPattern" value="%d{ISO8601}\t%p\t%c\t%x\t%m">
-    </layout>
 </appender>
 ```
 
