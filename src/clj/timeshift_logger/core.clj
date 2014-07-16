@@ -3,7 +3,7 @@
   (:require [environ.core :refer [env]])
   (:import [java.io ByteArrayInputStream]
            [org.jboss.netty.handler.codec.serialization ObjectDecoderInputStream]
-           [org.apache.log4j ConsoleAppender PatternLayout]))
+    [org.apache.log4j ConsoleAppender PatternLayout]))
 
 (def console-appender (ConsoleAppender. (PatternLayout. "%x %d{yyyy/MM/dd HH:mm:ss.SSS} %5p %c{1} - %m%n")))
 (.activateOptions console-appender)

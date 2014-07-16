@@ -1,6 +1,7 @@
 (defproject net.unit8/timeshift-logger "0.1.0-SNAPSHOT"
   :description "time shift loggin for log4j."
-  :dependencies [[net.unit8/clj-flume-node "0.1.0-SNAPSHOT"]
+  :dependencies [[org.clojure/clojure "1.6.0"]
+                 [net.unit8/clj-flume-node "0.1.0"]
                  [com.taoensso/carmine "2.6.2"]
                  [log4j "1.2.17"]
                  [redis.clients/jedis "2.4.2"]

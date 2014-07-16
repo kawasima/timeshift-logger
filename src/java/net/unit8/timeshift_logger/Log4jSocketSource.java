@@ -22,7 +22,6 @@ import redis.clients.jedis.Jedis;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,23 +29,43 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Source for Log4j SocketAppender.
+ *
  * @author kawasima
  */
 public class Log4jSocketSource extends AbstractSource implements EventDrivenSource, Configurable{
     private static final Logger logger = LoggerFactory
             .getLogger(Log4jSocketSource.class);
 
-    private int port;
+    /** Log server host */
     private String host = null;
 
-    private String redisHost = null;
-    private int redisPort;
-    private int redisDb;
-    private Jedis jedis;
+    /** Log server port */
+    private int port;
 
+    /** Redis host */
+    private String redisHost = null;
+
+    /** Redis port */
+    private int redisPort;
+
+    /** redis database number */
+    private int redisDb;
+
+    /** The retention seconds */
+    private int retentionSeconds;
+
+    /** Log level threshold */
+    private Level thresholdLevel;
+
+    /** redis client */
+    private Jedis jedis;
     private Channel nettyChannel;
     private CounterGroup counterGroup = new CounterGroup();
 
+    /**
+     * The Channel handler for log4j SocketAppender.
+     */
     public class Log4jSocketHandler extends SimpleChannelHandler {
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, ExceptionEvent e) {
@@ -78,20 +97,16 @@ public class Log4jSocketSource extends AbstractSource implements EventDrivenSour
                         histories = new ArrayList<LoggingEvent>();
                     histories.add(loggingEvent);
                     oeos.writeObject(histories);
-                    if (loggingEvent.getLevel().isGreaterOrEqual(Level.FATAL)) {
+                    if (loggingEvent.getLevel().isGreaterOrEqual(thresholdLevel)) {
                         getChannelProcessor().processEvent(EventBuilder.withBody(baos.toByteArray()));
                         jedis.del(userId.getBytes());
                     } else {
                         jedis.set(userId.getBytes(), baos.toByteArray());
-                        jedis.expire(userId.getBytes(), 60);
+                        jedis.expire(userId.getBytes(), retentionSeconds);
                     }
                 }
                 counterGroup.incrementAndGet("events.success");
-            } catch (ClassNotFoundException ex){
-                logger.error("IOError", ex);
-            } catch (IOException ex){
-                logger.error("IOError", ex);
-            } catch (ChannelException ex) {
+            } catch (Exception ex) {
                 counterGroup.incrementAndGet("events.dropped");
                 logger.error("Error writting to channel, event dropped", ex);
             }
@@ -149,8 +164,13 @@ public class Log4jSocketSource extends AbstractSource implements EventDrivenSour
         Configurables.ensureRequiredNonNull(context, "port");
         port = context.getInteger("port");
         host = context.getString("host");
+
         redisHost = context.getString("redisHost", "localhost");
         redisPort = context.getInteger("redisPort", 6379);
         redisDb   = context.getInteger("redisDb", 8);
+
+        retentionSeconds = context.getInteger("retentionSeconds", 900);
+
+        thresholdLevel = Level.toLevel(context.getString("thresholdLevel"), Level.ERROR);
     }
 }
